@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>CompetitorPulse AI</title>
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='style.css') }}"
+    >
+</head>
+
+<body>
+
+<div class="app-shell">
+
+    <aside class="sidebar">
+
+        <div class="brand">
+            <div class="brand-icon">CP</div>
+
+            <div>
+                <h2>CompetitorPulse</h2>
+                <p>Competitive Intelligence</p>
+            </div>
+        </div>
+
+        <nav>
+            <a class="active" href="#overview">Overview</a>
+            <a href="#competitors">Competitors</a>
+            <a href="#articles">Content Monitor</a>
+            <a href="#history">Scan History</a>
+        </nav>
+
+        <div class="sidebar-bottom">
+            <span class="status-dot"></span>
+            Monitoring dashboard
+        </div>
+
+    </aside>
+
+    <main class="main-content">
+
+        <header class="topbar">
+
+            <div>
+                <p class="eyebrow">COMPETITIVE INTELLIGENCE</p>
+
+                <h1>Monitoring Dashboard</h1>
+
+                <p class="subtitle">
+                    Discover competitor content and track changes.
+                </p>
+            </div>
+
+            <form
+                action="{{ url_for('scan_all') }}"
+                method="POST"
+            >
+                <button
+                    class="primary-button"
+                    type="submit"
+                >
+                    Scan All Competitors
+                </button>
+            </form>
+
+        </header>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+
+                <div class="flash-container">
+
+                    {% for category, message in messages %}
+
+                        <div class="flash {{ category }}">
+                            {{ message }}
+                        </div>
+
+                    {% endfor %}
+
+                </div>
+
+            {% endif %}
+        {% endwith %}
+
+        <section id="overview" class="stats-grid">
+
+            <div class="stat-card">
+                <p>Total Competitors</p>
+                <h2>{{ stats.competitors }}</h2>
+                <span>Tracked domains</span>
+            </div>
+
+            <div class="stat-card">
+                <p>Discovered Articles</p>
+                <h2>{{ stats.articles }}</h2>
+                <span>Stored content records</span>
+            </div>
+
+            <div class="stat-card">
+                <p>Scan Attempts</p>
+                <h2>{{ stats.scans }}</h2>
+                <span>Successful or failed</span>
+            </div>
+
+            <div class="stat-card">
+                <p>Price Records</p>
+                <h2>{{ stats.prices }}</h2>
+                <span>Historical observations</span>
+            </div>
+
+        </section>
+
+        <section id="competitors" class="panel">
+
+            <div class="panel-heading">
+                <div>
+                    <h2>Competitor Monitoring</h2>
+                    <p>Add a domain to begin monitoring.</p>
+                </div>
+            </div>
+
+            <form
+                action="{{ url_for('add_competitor') }}"
+                method="POST"
+                class="add-form"
+            >
+
+                <input
+                    type="text"
+                    name="domain"
+                    placeholder="example.com"
+                    required
+                >
+
+                <button
+                    type="submit"
+                    class="primary-button"
+                >
+                    Add Competitor
+                </button>
+
+            </form>
+
+            <div class="table-wrapper">
+
+                <table>
+
+                    <thead>
+                        <tr>
+                            <th>Domain</th>
+                            <th>Articles</th>
+                            <th>Last Scan</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+
+                    {% for competitor in competitors %}
+
+                        <tr>
+
+                            <td>
+                                <strong>
+                                    {{ competitor.domain }}
+                                </strong>
+                            </td>
+
+                            <td>
+                                {{ competitor.article_count }}
+                            </td>
+
+                            <td>
+                                {{ competitor.last_scanned_at or "Never" }}
+                            </td>
+
+                            <td>
+
+                                <form
+                                    action="{{ url_for('scan', competitor_id=competitor.id) }}"
+                                    method="POST"
+                                >
+
+                                    <button
+                                        type="submit"
+                                        class="secondary-button"
+                                    >
+                                        Scan Now
+                                    </button>
+
+                                </form>
+
+                            </td>
+
+                        </tr>
+
+                    {% else %}
+
+                        <tr>
+                            <td colspan="4" class="empty-state">
+                                No competitors added yet.
+                            </td>
+                        </tr>
+
+                    {% endfor %}
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </section>
+
+        <section id="articles" class="panel">
+
+            <div class="panel-heading">
+                <div>
+                    <h2>Recently Discovered Content</h2>
+                    <p>Articles found during scans.</p>
+                </div>
+            </div>
+
+            <div class="article-list">
+
+            {% for article in articles %}
+
+                <article class="article-card">
+
+                    <div class="article-main">
+
+                        <span class="domain-label">
+                            {{ article.domain }}
+                        </span>
+
+                        <h3>
+
+                            <a
+                                href="{{ article.url }}"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                            >
+                                {{ article.title or "Untitled article" }}
+                            </a>
+
+                        </h3>
+
+                        <p>
+                            {{ article.description or "No description available." }}
+                        </p>
+
+                        <div class="article-meta">
+
+                            <span>
+                                Published:
+                                {{ article.published_at or "Unknown" }}
+                            </span>
+
+                            <span>
+                                First discovered:
+                                {{ article.first_seen_at }}
+                            </span>
+
+                        </div>
+
+                        <div class="keywords">
+
+                            {% for keyword in (article.keywords or "").split(", ") %}
+
+                                {% if keyword %}
+                                    <span>{{ keyword }}</span>
+                                {% endif %}
+
+                            {% endfor %}
+
+                        </div>
+
+                    </div>
+
+                </article>
+
+            {% else %}
+
+                <div class="empty-state">
+                    No articles discovered yet. Add a competitor and scan it.
+                </div>
+
+            {% endfor %}
+
+            </div>
+
+        </section>
+
+        <section id="history" class="panel">
+
+            <div class="panel-heading">
+                <div>
+                    <h2>Scan History</h2>
+                    <p>Recent monitoring activity.</p>
+                </div>
+            </div>
+
+            <div class="table-wrapper">
+
+                <table>
+
+                    <thead>
+                        <tr>
+                            <th>Domain</th>
+                            <th>Status</th>
+                            <th>New Articles</th>
+                            <th>Message</th>
+                            <th>Time</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+
+                    {% for scan in scans %}
+
+                        <tr>
+
+                            <td>{{ scan.domain }}</td>
+
+                            <td>
+                                <span class="badge {{ scan.status }}">
+                                    {{ scan.status }}
+                                </span>
+                            </td>
+
+                            <td>{{ scan.new_articles }}</td>
+
+                            <td>{{ scan.message }}</td>
+
+                            <td>{{ scan.scanned_at }}</td>
+
+                        </tr>
+
+                    {% else %}
+
+                        <tr>
+                            <td colspan="5" class="empty-state">
+                                No scan history available.
+                            </td>
+                        </tr>
+
+                    {% endfor %}
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </section>
+
+        <footer>
+            CompetitorPulse AI · Competitive intelligence dashboard
+        </footer>
+
+    </main>
+
+</div>
+
+</body>
+</html>
